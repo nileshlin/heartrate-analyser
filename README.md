@@ -26,7 +26,7 @@ This project is a web-based application built with Flask that estimates a person
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/heartrate-analyzer.git
+   git clone https://github.com/nileshlin/heartrate-analyzer.git
    cd heartrate-analyzer
    ```
 
