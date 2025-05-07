@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Webcam Streaming</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #webcam, #processedFrame {
+            max-width: 640px;
+            border: 2px solid #333;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Webcam Streaming</h1>
+    <video id="webcam" width="640" height="480" autoplay></video>
+    <img id="processedFrame" width="640" height="480" alt="Processed Frame">
+    <button id="startBtn">Start Streaming</button>
+
+    <script>
+        const webcamElement = document.getElementById('webcam');
+        const processedFrameElement = document.getElementById('processedFrame');
+        const startBtn = document.getElementById('startBtn');
+        let videoStream = null;
+
+        startBtn.addEventListener('click', startWebcamStream);
+
+        async function startWebcamStream() {
+            try {
+                // Request webcam access
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                webcamElement.srcObject = videoStream;
+
+                // Start sending frames to server
+                const videoTrack = videoStream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(videoTrack);
+                
+                setInterval(async () => {
+                    try {
+                        const bitmap = await imageCapture.grabFrame();
+                        const canvas = document.createElement('canvas');
+                        canvas.width = bitmap.width;
+                        canvas.height = bitmap.height;
+                        const context = canvas.getContext('2d');
+                        context.drawImage(bitmap, 0, 0);
+                        
+                        // Convert canvas to base64
+                        const base64Image = canvas.toDataURL('image/jpeg');
+                        
+                        // Send frame to server
+                        const response = await fetch('/process_frame', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ frame: base64Image })
+                        });
+
+                        const result = await response.json();
+                        processedFrameElement.src = result.frame;
+                    } catch (err) {
+                        console.error('Error capturing/sending frame:', err);
+                    }
+                }, 100);  // Send frame every 100ms
+            } catch (err) {
+                console.error('Webcam access error:', err);
+                alert('Could not access webcam');
+            }
+        }
+    </script>
+</body>
+</html>
